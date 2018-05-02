@@ -17,11 +17,13 @@
  *  Currently you can setup run mode, and midi channel
  *  
  *  TODO:
- *  - Setup for program change parameters in all modes
- *  - Using 7 segment display for showing operation
+ *  - Setup for program change parameters in mode 3
+ *  - Fix displaying text in save settings
  *  
  *  DONE:
  *  - Saving and loading setup to/from EEPROM
+ *  - Using 7 segment display for showing operation
+ *  - Setup for pc parameters in mode 1 and 2
  *    
  *  Current version uses following arduino libraries:
  *  OneButton (https://github.com/mathertel/OneButton)
@@ -167,12 +169,16 @@ void setup() {
   main_fsm.add_transition(&state_setup_mode1, &state_setup_mode2, TO_SETUP_MODE2, NULL);
   main_fsm.add_transition(&state_setup_mode1, &state_setup_mode1_low, TO_SETUP_MODE1_LOW, NULL);
   main_fsm.add_transition(&state_setup_mode1_low, &state_setup_mode1_hi, TO_SETUP_MODE1_HI, NULL);
+  main_fsm.add_transition(&state_setup_mode1_low, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode1_hi, &state_setup_mode2, TO_SETUP_MODE2, NULL);
+  main_fsm.add_transition(&state_setup_mode1_hi, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode1, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode2, &state_setup_mode3, TO_SETUP_MODE3, NULL);
   main_fsm.add_transition(&state_setup_mode2, &state_setup_mode2_btn1, TO_SETUP_MODE2_BTN1, NULL);
   main_fsm.add_transition(&state_setup_mode2_btn1, &state_setup_mode2_btn2, TO_SETUP_MODE2_BTN2, NULL);
+  main_fsm.add_transition(&state_setup_mode2_btn1, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode2_btn2, &state_setup_mode3, TO_SETUP_MODE3, NULL);
+  main_fsm.add_transition(&state_setup_mode2_btn2, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode3, &state_setup_exit, TO_SETUP_EXIT, NULL);
   main_fsm.add_transition(&state_setup_mode3, &state_setup_mode, TO_SETUP_MODE_START, NULL);
   main_fsm.add_transition(&state_setup_mode3, &state_setup_mode3_btn1PC1, TO_SETUP_MODE3_BTN1_PC1, NULL);
@@ -423,7 +429,7 @@ void longPressFromSetupMidi()
   {
     main_fsm.trigger(TO_SETUP_EXIT);
   }
-  else if(btn1_state == 0 and btn2_state == 1)
+  else if(btn1_state == 0 && btn2_state == 1)
   {
     main_fsm.trigger(TO_SETUP_MODE1);  
   }
@@ -435,6 +441,8 @@ void on_setup_mode1_enter()
 {
   // TODO: here we will setup program change low and high limit for cycling through them
   //Serial.println("on_setup_mode1_enter");
+  btn1.attachClick(nullClick);
+  btn2.attachClick(nullClick);
   btn1.attachLongPressStop(longPressFromSetupMode1);
   btn2.attachLongPressStop(longPressFromSetupMode1);
   updateDisplay("s n1");
@@ -446,11 +454,11 @@ void longPressFromSetupMode1()
   {
     main_fsm.trigger(TO_SETUP_MODE1_LOW);
   }
-  else if(btn1_state == 0 and btn2_state == 1)
+  else if(btn1_state == 0 && btn2_state == 1)
   {    
     main_fsm.trigger(TO_SETUP_MODE2);  
   }
-  else if(btn1_state == 1 and btn2_state == 0)
+  else if(btn1_state == 1 && btn2_state == 0)
   {
     main_fsm.trigger(TO_SETUP_EXIT);
   }
@@ -461,9 +469,10 @@ void longPressFromSetupMode1()
 void on_setup_mode1_low_enter()
 {
   btn1.attachClick(mode1LowLimitDecrease);
-  btn1.attachClick(mode1LowLimitIncrease);
+  btn2.attachClick(mode1LowLimitIncrease);
   btn1.attachLongPressStop(longPressFromSetupMode1Low);
-  updateDisplay("LO  ");
+  btn2.attachLongPressStop(longPressFromSetupMode1Low);
+  updateDisplay("S LO");
 }
 
 void mode1LowLimitDecrease()
@@ -496,15 +505,24 @@ void mode1LowLimitIncrease()
 
 void longPressFromSetupMode1Low()
 {
-  main_fsm.trigger(TO_SETUP_MODE1_HI);
+  if(btn1_state == 1 && btn2_state == 0)
+  {
+    main_fsm.trigger(TO_SETUP_EXIT);
+  }
+  else if(btn1_state == 0 && btn2_state == 1)
+  {    
+    main_fsm.trigger(TO_SETUP_MODE1_HI);  
+  }
+  btn2_state = 0;
+  btn1_state = 0;
 }
 
 void on_setup_mode1_hi_enter()
 {
   btn1.attachClick(mode1HiLimitDecrease);
-  btn1.attachClick(mode1HiLimitIncrease);
+  btn2.attachClick(mode1HiLimitIncrease);
   btn1.attachLongPressStop(longPressFromSetupMode1Hi); 
-  updateDisplay("HI  "); 
+  updateDisplay("S HI"); 
 }
 
 void mode1HiLimitDecrease()
@@ -537,13 +555,24 @@ void mode1HiLimitIncrease()
 
 void longPressFromSetupMode1Hi()
 {
-  main_fsm.trigger(TO_SETUP_MODE2);
+  if(btn1_state == 1 && btn2_state == 0)
+  {
+    main_fsm.trigger(TO_SETUP_EXIT);
+  }
+  else if(btn1_state == 1 && btn2_state == 1)
+  {    
+    main_fsm.trigger(TO_SETUP_MODE2);  
+  }
+  btn2_state = 0;
+  btn1_state = 0;
 }
 
 void on_setup_mode2_enter()
 {
   // TODO: here we will set program change numbers for btn1 and btn2
   //Serial.println("on_setup_mode2_enter");
+  btn1.attachClick(nullClick);
+  btn2.attachClick(nullClick);
   btn1.attachLongPressStop(longPressFromSetupMode2);
   btn2.attachLongPressStop(longPressFromSetupMode2);
   updateDisplay("s n2");
@@ -555,9 +584,9 @@ void longPressFromSetupMode2()
   {
     main_fsm.trigger(TO_SETUP_EXIT);  
   }
-  else if(btn1_state == 0 && btn2_state == 1)
+  else if(btn1_state == 1 && btn2_state == 1)
   {
-    main_fsm.trigger(TO_SETUP_MODE3);  
+    main_fsm.trigger(TO_SETUP_MODE2_BTN1);  
   }
   btn2_state = 0;
   btn1_state = 0;
@@ -565,12 +594,104 @@ void longPressFromSetupMode2()
 
 void on_setup_mode2_btn1_enter()
 {
-  
+  btn1.attachClick(mode2Btn1Decrease);
+  btn2.attachClick(mode2Btn1Increase);
+  btn1.attachLongPressStop(longPressFromSetupMode2Btn1);
+  btn2.attachLongPressStop(longPressFromSetupMode2Btn1);
+  updateDisplay("s b1");
+}
+
+void mode2Btn1Decrease()
+{
+  if(_settings.mode2_btn1PC == 0)
+  {
+    _settings.mode2_btn1PC = 127;
+  }
+  else
+  {
+    _settings.mode2_btn1PC--;
+  }
+  updateDisplay("PC",_settings.mode2_btn1PC);
+  //Serial.println("mode2 btn1 set to "+String(_settings.mode2_btn1PC));
+}
+
+void mode2Btn1Increase()
+{
+  if(_settings.mode2_btn1PC == 127)
+  {
+    _settings.mode2_btn1PC = 0;
+  }
+  else
+  {
+    _settings.mode2_btn1PC++;
+  }
+  updateDisplay("PC",_settings.mode2_btn1PC);
+  //Serial.println("mode2 btn1 set to "+String(_settings.mode2_btn1PC));
+}
+
+void longPressFromSetupMode2Btn1()
+{
+  if(btn1_state == 1 && btn2_state == 0)
+  {
+    main_fsm.trigger(TO_SETUP_EXIT);
+  }
+  else if(btn1_state == 1 && btn2_state == 1)
+  {    
+    main_fsm.trigger(TO_SETUP_MODE2_BTN2);  
+  }
+  btn2_state = 0;
+  btn1_state = 0;
 }
 
 void on_setup_mode2_btn2_enter()
 {
-  
+  btn1.attachClick(mode2Btn2Decrease);
+  btn2.attachClick(mode2Btn2Increase);
+  btn1.attachLongPressStop(longPressFromSetupMode2Btn2);
+  btn2.attachLongPressStop(longPressFromSetupMode2Btn2);
+  updateDisplay("s b2");
+}
+
+void mode2Btn2Decrease()
+{
+  if(_settings.mode2_btn2PC == 0)
+  {
+    _settings.mode2_btn2PC = 127;
+  }
+  else
+  {
+    _settings.mode2_btn2PC--;
+  }
+  updateDisplay("PC",_settings.mode2_btn2PC);
+  //Serial.println("mode2 btn2 set to "+String(_settings.mode2_btn2PC));
+}
+
+void mode2Btn2Increase()
+{
+  if(_settings.mode2_btn2PC == 127)
+  {
+    _settings.mode2_btn2PC = 0;
+  }
+  else
+  {
+    _settings.mode2_btn2PC++;
+  }
+  updateDisplay("PC",_settings.mode2_btn2PC);
+  //Serial.println("mode2 btn2 set to "+String(_settings.mode2_btn2PC));
+}
+
+void longPressFromSetupMode2Btn2()
+{
+  if(btn1_state == 1 && btn2_state == 0)
+  {
+    main_fsm.trigger(TO_SETUP_EXIT);
+  }
+  else if(btn1_state == 1 && btn2_state == 1)
+  {    
+    main_fsm.trigger(TO_SETUP_MODE3);  
+  }
+  btn2_state = 0;
+  btn1_state = 0;
 }
 
 
@@ -619,7 +740,6 @@ void on_setup_mode3_btn2PC2_enter()
 
 void on_setup_exit_enter()
 {
-  // TODO: here we will save setup to EEPROM
   //Serial.println("on_setup_exit_enter");
   btn1.attachLongPressStop(longPressToRun);
   btn2.attachLongPressStop(longPressToRun);
@@ -638,7 +758,7 @@ void longPressToRun()
   else if(btn1_state == 1 && btn2_state == 0)
   {
     // only button one longpressed, goto run without saving
-    updateDisplay("ret ");
+    updateDisplay("ret");
     main_fsm.trigger(TO_RUN);  
   }
   btn2_state = 0;
@@ -648,8 +768,12 @@ void longPressToRun()
 void on_setup_exit_exit()
 {
   //Serial.println("on_setup_exit_exit");
-  
   delay(2000);
+}
+
+void nullClick()
+{
+  
 }
 
 void loadDefaultSettings(){
@@ -716,9 +840,13 @@ void updateDisplay(String str, int no)
   {
     strMsg = str.substring(0,2)+" "+String(no);
   }
-  else
+  else if(no >=10 && no < 100)
   {
     strMsg = str.substring(0,2)+String(no);
+  }
+  else
+  {
+    strMsg = str.substring(0,1)+String(no);
   }
   strMsg.toCharArray(msg,5);
   //Serial.println("str: "+str+", no: "+String(no)+", strMsg: "+strMsg+", msg: "+msg );
@@ -728,7 +856,9 @@ void updateDisplay(String str, int no)
 void updateDisplay(String str)
 {
   char msg[5];
-  str.toCharArray(msg,5);
+  String strMsg;
+  strMsg = str.substring(0,4);
+  strMsg.toCharArray(msg,5);
   //Serial.println("str: "+str+", msg: "+msg );
   segDisp.setChars(msg);
 }
