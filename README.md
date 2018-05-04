@@ -2,6 +2,7 @@
 Simple programmable two button MIDI controller for arduino
 
 Operates in three modes.
+
 Mode 1:
 Buttons cycle through defined midi program change range.
 Button 1 decreases, button 2 increases pc
