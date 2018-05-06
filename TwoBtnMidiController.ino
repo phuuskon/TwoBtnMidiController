@@ -5,7 +5,7 @@
  *  Copyright (C) 2018 Pekka Huuskonen
  *  
  *  This sketch is for simple programmable two button midi controller capable of sending
- *  MIDI Program Change messages. Notic, this is alpha version with some of the functionality.
+ *  MIDI Program Change messages. Notice, this is beta version so some bugs might be found.
  *  See comments in code.
  *  
  *  There are three run modes where buttons operates:
@@ -31,7 +31,7 @@
  *  EEPROM (https://www.arduino.cc/en/Reference/EEPROM)
  *  SevSeg (https://github.com/DeanIsMe/SevSeg)
  */
-const String VERSION = "0.2";
+const String VERSION = "0.3";
 const int INIT_SHOWTIME = 3000;
 const int SETUP_EXIT_SHOWTIME = 2000;
 
