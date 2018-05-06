@@ -14,7 +14,7 @@
  *  Mode 3: button 1 toggles between two predefined program change and so does button 2
  *  
  *  Long press on both buttons enters setup.
- *  Currently you can setup run mode, and midi channel
+ *  Long press on btn 2 enters run mode setup
  *  
  *  TODO:
  *  
