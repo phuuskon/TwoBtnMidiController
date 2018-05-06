@@ -17,12 +17,12 @@
  *  Currently you can setup run mode, and midi channel
  *  
  *  TODO:
- *  - Fix displaying text in save settings
  *  
  *  DONE:
  *  - Saving and loading setup to/from EEPROM
  *  - Using 7 segment display for showing operation
  *  - Setup for pc parameters in all modes
+ *  - Fixed displaying text in save settings
  *    
  *  Current version uses following arduino libraries:
  *  OneButton (https://github.com/mathertel/OneButton)
@@ -33,6 +33,7 @@
  */
 const String VERSION = "0.2";
 const int INIT_SHOWTIME = 3000;
+const int SETUP_EXIT_SHOWTIME = 2000;
 
 #include <OneButton.h>
 #include <Fsm.h>
@@ -109,7 +110,8 @@ State state_setup_mode3_btn2PC2(&on_setup_mode3_btn2PC2_enter, NULL, NULL);
 
 State state_setup_mode2(&on_setup_mode2_enter, NULL, NULL);
 State state_setup_mode3(&on_setup_mode3_enter, NULL, NULL);
-State state_setup_exit(&on_setup_exit_enter, NULL, &on_setup_exit_exit);
+State state_setup_exit(&on_setup_exit_enter, NULL, NULL);
+State state_setup_to_run(NULL, NULL, NULL);
 Fsm main_fsm(&state_init);  
 
 // settings
@@ -198,7 +200,8 @@ void setup() {
   main_fsm.add_transition(&state_setup_mode3_btn2PC1, &state_setup_mode3_btn2PC2, TO_SETUP_MODE3_BTN2_PC2, NULL);
   main_fsm.add_transition(&state_setup_mode3_btn2PC2, &state_setup_midi, TO_SETUP_MIDI, NULL);
   main_fsm.add_transition(&state_setup_mode3_btn2PC2, &state_setup_exit, TO_SETUP_EXIT, NULL);
-  main_fsm.add_transition(&state_setup_exit, &state_run, TO_RUN, NULL);
+  main_fsm.add_transition(&state_setup_exit, &state_setup_to_run, TO_RUN, NULL);
+  main_fsm.add_timed_transition(&state_setup_to_run, &state_run, SETUP_EXIT_SHOWTIME, NULL);
   
   // init run mode
   run_mode = RUN_MODE1;
